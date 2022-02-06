@@ -7,6 +7,7 @@ class Person:
         # set db connection
         self.con = con
         self.discordProfile = discordProfile
+        self.display_name = discordProfile.display_name
 
         # Query DB
         cur = con.cursor()
@@ -16,11 +17,11 @@ class Person:
 
         # Insert if not existed
         if result is None:
-            result = (discordProfile.id, discordProfile.display_name, 1, 1)
+            result = (discordProfile.id, discordProfile.display_name, 1, 0)
             cur.execute("INSERT INTO EMPLOYMENT VALUES (?,?,?,?)", result)
 
         # Map db data to object
-        (self.discordID, self.discordHandle, self.isHired, self.hireCount) = result
+        (self.discordID, self.discordHandle, self.isHired, self.fireCount) = result
 
         # Commit DB
         con.commit()
@@ -29,8 +30,8 @@ class Person:
         with self.con as con:
             cur = con.cursor()
             cur.execute(
-                "UPDATE EMPLOYMENT SET isHired = ? WHERE discordID = ?",
-                (0, self.discordID),
+                "UPDATE EMPLOYMENT SET isHired = ?, fireCount = ? WHERE discordID = ?",
+                (0, self.fireCount + 1, self.discordID),
             )
             con.commit()
 
@@ -38,8 +39,8 @@ class Person:
         with self.con as con:
             cur = con.cursor()
             cur.execute(
-                "UPDATE EMPLOYMENT SET isHired = ?, hireCount = ? WHERE discordID = ?",
-                (1, self.hireCount + 1, self.discordID),
+                "UPDATE EMPLOYMENT SET isHired = ? WHERE discordID = ?",
+                (1, self.discordID),
             )
             con.commit()
 

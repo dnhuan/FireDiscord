@@ -18,13 +18,12 @@ SERVER_ID_205 = 933226891970764821
 
 # Bot setup
 SERVER_ID = TEST_SERVER_ID
+SERVER_ID_LIST = [TEST_SERVER_ID, SERVER_ID_205]
 con = sl.connect("employment.db")
 cur = con.cursor()
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
-slash = SlashCommand(
-    bot, sync_commands=True, debug_guild=SERVER_ID, delete_from_unused_guilds=True,
-)
+slash = SlashCommand(bot, sync_commands=True, delete_from_unused_guilds=True,)
 
 # Main driver code
 @bot.event
@@ -39,7 +38,7 @@ async def on_ready():
             discordID INTEGER NOT NULL PRIMARY KEY,
             discordHandle TEXT NOT NULL,
             isHired INTEGER NOT NULL,
-            hireCount INTEGER NOT NULL
+            fireCount INTEGER NOT NULL
         ); """
     )
 
@@ -47,8 +46,8 @@ async def on_ready():
     cur.execute(
         """
         ---sql
-        INSERT INTO EMPLOYMENT(discordID, discordHandle, isHired, hireCount) 
-        SELECT 0000, 'test_subject#0000', 1, 1 
+        INSERT INTO EMPLOYMENT(discordID, discordHandle, isHired, fireCount) 
+        SELECT 0000, 'test_subject#0000', 1, 0
             WHERE NOT EXISTS( SELECT * FROM EMPLOYMENT WHERE discordID = 0000);"""
     )
 
@@ -72,30 +71,78 @@ async def on_ready():
             "required": False,
         },
     ],
-    guild_ids=[SERVER_ID],
+    guild_ids=SERVER_ID_LIST,
 )
-async def fire(ctx: commands.Context, employee_name: discord.User, reason: str = ""):
-    print(employee_name.id)
-    print(reason)
+async def fire(ctx: SlashContext, employee_name: discord.User, reason: str = ""):
     employer: Person = Person(con, ctx.author)
     employee: Person = Person(con, employee_name)
 
     if employer.discordID == employee.discordID:
-        await ctx.send("You can't fire yourself!")
+        await ctx.send("You can't fire yourself! <:kekw:939805523962921040>")
         return
 
-    pass
+    if employer.isHired == 0:
+        await ctx.send("You are unemployed, you can't fire anybody")
+        return
 
-    # print(type(employee.id))
-    # reason = " ".join(reason) if len(reason) != 0 else "no reason"
-    # await ctx.send(
-    #     "{0} fired {1} for {2}".format(ctx.author.mention, employee.mention, reason)
-    # )
+    if employee.isHired == 0:
+        message = "**{0}** was already fired, you can't fire **{0}** anymore!".format(
+            employee.display_name
+        )
+        await ctx.send(message)
+        return
+
+    # Else
+    employee.beFired()
+    if reason == "":
+        reason = "no reason"
+    message = "**{0}** just fired **{1}** for *{2}*".format(
+        employer.display_name, employee.display_name, reason
+    )
+    await ctx.send(message)
 
 
-@bot.command()
-async def hire(ctx, *arg):
-    await ctx.send(arg)
+@slash.slash(
+    name="hire",
+    description="Hire employee",
+    options=[
+        {
+            "name": "employee_name",
+            "description": "name of the employee you want to hire",
+            "type": 6,
+            "required": True,
+        }
+    ],
+    guild_ids=SERVER_ID_LIST,
+)
+async def hire(ctx: SlashContext, employee_name: discord.User):
+    employer: Person = Person(con, ctx.author)
+    employee: Person = Person(con, employee_name)
+
+    if employer.discordID == employee.discordID:
+        await ctx.send("You can't hire yourself! <:kekw:939805523962921040>")
+        return
+
+    if employer.isHired == 0:
+        message = (
+            "You are unemployed, you can't hire anybody. You can't even get a job!"
+        )
+        await ctx.send(message)
+        return
+
+    if employee.isHired == 1:
+        message = "**{0}** was already hired".format(employee.display_name)
+        if employer.isHired == 0:
+            message = message + ", unlike ***you***!"
+        await ctx.send(message)
+        return
+
+    # Else
+    employee.beHired()
+    message = "**{0}** just hired **{1}**".format(
+        employer.display_name, employee.display_name
+    )
+    await ctx.send(message)
 
 
 @slash.slash(
@@ -109,17 +156,17 @@ async def hire(ctx, *arg):
             "required": True,
         }
     ],
-    guild_ids=[SERVER_ID],
+    guild_ids=SERVER_ID_LIST,
 )
-async def count(ctx: commands.Context, employee_name: discord.Member):
+async def count(ctx: SlashContext, employee_name: discord.Member):
     employee: Person = Person(con, employee_name)
 
     message = "**{0}** was fired {1} time".format(
-        employee.discordProfile.display_name, employee.hireCount - 1
+        employee.display_name, employee.fireCount
     )
 
     # Plural for time(s)
-    if employee.hireCount > 1:
+    if employee.fireCount >= 2:
         message = message + "s"
 
     await ctx.send(message)
@@ -128,9 +175,10 @@ async def count(ctx: commands.Context, employee_name: discord.Member):
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MemberNotFound):
-        await ctx.send("Can't find that person")
+        await ctx.send("Can't find that person.")
     else:
         print(error)
+        await ctx.send("I don't undestand that.")
 
 
 bot.run(TOKEN)

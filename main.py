@@ -76,7 +76,7 @@ async def fire(ctx: SlashContext, employee_name: discord.User, reason: str = "")
     employee: Person = Person(con, employee_name)
 
     if employer.discordID == employee.discordID:
-        await ctx.send("You can't fire yourself! <:kekw:939805523962921040>")
+        await ctx.send("You can't fire yourself! <:kekw:938670241846796338>")
         return
 
     if employer.isHired == 0:
@@ -118,7 +118,7 @@ async def hire(ctx: SlashContext, employee_name: discord.User):
     employee: Person = Person(con, employee_name)
 
     if employer.discordID == employee.discordID:
-        await ctx.send("You can't hire yourself! <a:kekwlaugh:939996305118343269>")
+        await ctx.send("You can't hire yourself! <a:kekwlaugh:940043484805627924>")
         return
 
     if employer.isHired == 0:

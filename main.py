@@ -120,7 +120,7 @@ async def hire(ctx: SlashContext, employee_name: discord.User):
     employee: Person = Person(con, employee_name)
 
     if employer.discordID == employee.discordID:
-        await ctx.send("You can't hire yourself! <:kekw:939805523962921040>")
+        await ctx.send("You can't hire yourself! <a:kekwlaugh:939996305118343269>")
         return
 
     if employer.isHired == 0:
@@ -146,8 +146,8 @@ async def hire(ctx: SlashContext, employee_name: discord.User):
 
 
 @slash.slash(
-    name="count",
-    description="Display fire count",
+    name="status",
+    description="Display employment status",
     options=[
         {
             "name": "employee_name",
@@ -158,10 +158,18 @@ async def hire(ctx: SlashContext, employee_name: discord.User):
     ],
     guild_ids=SERVER_ID_LIST,
 )
-async def count(ctx: SlashContext, employee_name: discord.Member):
+async def status(ctx: SlashContext, employee_name: discord.Member):
     employee: Person = Person(con, employee_name)
 
-    message = "**{0}** was fired {1} time".format(
+    # Status
+    message = "**{0}** is currently ".format(employee.display_name)
+    if employee.isHired == 1:
+        message = message + "*employed*. "
+    else:
+        message = message + "*unemployed*. "
+
+    # Fire count
+    message = message + "**{0}** was fired {1} time".format(
         employee.display_name, employee.fireCount
     )
 

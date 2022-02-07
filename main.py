@@ -21,7 +21,7 @@ con = sl.connect("employment.db")
 cur = con.cursor()
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
-slash = SlashCommand(bot)
+slash = SlashCommand(bot, sync_commands=True)
 
 # Main driver code
 @bot.event

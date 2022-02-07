@@ -1,6 +1,4 @@
 # This bot fires people
-from email import message
-from click import option
 import discord
 from discord.ext import commands
 from discord_slash import SlashCommand, SlashContext
@@ -23,7 +21,7 @@ con = sl.connect("employment.db")
 cur = con.cursor()
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
-slash = SlashCommand(bot, sync_commands=True, delete_from_unused_guilds=True,)
+slash = SlashCommand(bot)
 
 # Main driver code
 @bot.event
@@ -178,6 +176,50 @@ async def status(ctx: SlashContext, employee_name: discord.Member):
         message = message + "s"
 
     await ctx.send(message)
+
+
+@slash.slash(
+    name="leaderboard",
+    description="Display unemployment leaderboard",
+    guild_ids=SERVER_ID_LIST,
+)
+async def leaderboard(ctx: SlashContext):
+    cur = con.cursor()
+    database_result = cur.execute(
+        "SELECT * FROM EMPLOYMENT ORDER BY fireCount DESC LIMIT 5"
+    ).fetchall()
+    leaderboard_text = leaderboard_parser(ctx, database_result)
+    embed = discord.Embed(
+        title="Unemployment Leaderboard", description=leaderboard_text
+    )
+    await ctx.send(embed=embed)
+
+
+def leaderboard_parser(ctx: SlashContext, database_result):
+    guild = ctx.guild
+
+    res = ""
+
+    for idx, val in enumerate(database_result):
+        # Extract info
+        id = int(val[0])
+        try:
+            member: discord.Member = guild.get_member(id)
+            name = member.display_name
+        except:
+            continue
+        fireCount = val[3]
+
+        # if count == 0 then skip
+        if fireCount == 0:
+            continue
+
+        res = res + "{0}. {1} - {2} time".format(idx + 1, name, fireCount)
+        if fireCount >= 2:
+            res = res + "s"  # plural for times
+        res = res + "\n"
+
+    return res
 
 
 @bot.event
